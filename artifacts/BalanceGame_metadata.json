@@ -8,6 +8,17 @@
 			{
 				"inputs": [
 					{
+						"internalType": "uint256",
+						"name": "_cost",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "constructor"
+			},
+			{
+				"inputs": [
+					{
 						"internalType": "address",
 						"name": "owner",
 						"type": "address"
@@ -51,9 +62,9 @@
 					},
 					{
 						"indexed": true,
-						"internalType": "uint256",
+						"internalType": "address",
 						"name": "votedAddress",
-						"type": "uint256"
+						"type": "address"
 					},
 					{
 						"indexed": true,
@@ -104,6 +115,61 @@
 				"type": "event"
 			},
 			{
+				"inputs": [],
+				"name": "COST",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "GAMEINDEX",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "string",
+						"name": "_questionA",
+						"type": "string"
+					},
+					{
+						"internalType": "string",
+						"name": "_questionB",
+						"type": "string"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_deadline",
+						"type": "uint256"
+					}
+				],
+				"name": "createVote",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "payable",
+				"type": "function"
+			},
+			{
 				"inputs": [
 					{
 						"internalType": "uint256",
@@ -136,6 +202,11 @@
 					{
 						"internalType": "uint256",
 						"name": "voteCountB",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "deadline",
 						"type": "uint256"
 					},
 					{
@@ -183,6 +254,24 @@
 			{
 				"inputs": [
 					{
+						"internalType": "uint256",
+						"name": "_gameId",
+						"type": "uint256"
+					},
+					{
+						"internalType": "enum BalanceGame.VoteOpttion",
+						"name": "_voteOption",
+						"type": "uint8"
+					}
+				],
+				"name": "vote",
+				"outputs": [],
+				"stateMutability": "payable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
 						"internalType": "address",
 						"name": "",
 						"type": "address"
@@ -197,6 +286,24 @@
 					}
 				],
 				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "_newAddress",
+						"type": "address"
+					},
+					{
+						"internalType": "bool",
+						"name": "_status",
+						"type": "bool"
+					}
+				],
+				"name": "whitelistUpdate",
+				"outputs": [],
+				"stateMutability": "nonpayable",
 				"type": "function"
 			}
 		],
@@ -266,11 +373,11 @@
 			]
 		},
 		"BalanceGame.sol": {
-			"keccak256": "0xc5e0e2a653302f42bd6e825cbc0e722741d34f223f35d2a4b0a30ae70127af6b",
+			"keccak256": "0x9555c77aca112946f5256ab23095750ebf819b707bc7ef469f0f4900d6bac7ee",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://961c5f1369533d56d808b6fa191b2f744dd23acf82d379886c494703a1970e41",
-				"dweb:/ipfs/QmU9THdPRVdw1xr9bqFJZ3YvTcwKJWYwfdtkn7irAmZRj9"
+				"bzz-raw://b138d13dcd7de2248ef17fb4fae317ea707744f655448620baa95725bf158b0f",
+				"dweb:/ipfs/QmWRH291vJAfJsS4GLjJSUeDVw6a4WgQmzFThVmUNjEGHM"
 			]
 		}
 	},
