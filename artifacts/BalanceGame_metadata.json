@@ -48,6 +48,43 @@
 						"type": "uint256"
 					}
 				],
+				"name": "GameFinished",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "uint256",
+						"name": "gameId",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "string",
+						"name": "questionA",
+						"type": "string"
+					},
+					{
+						"indexed": false,
+						"internalType": "string",
+						"name": "questionB",
+						"type": "string"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "deadline",
+						"type": "uint256"
+					},
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "creator",
+						"type": "address"
+					}
+				],
 				"name": "NewGame",
 				"type": "event"
 			},
@@ -206,6 +243,11 @@
 					},
 					{
 						"internalType": "uint256",
+						"name": "totalETH",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
 						"name": "deadline",
 						"type": "uint256"
 					},
@@ -213,6 +255,25 @@
 						"internalType": "address",
 						"name": "creator",
 						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"name": "isContinue",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "",
+						"type": "bool"
 					}
 				],
 				"stateMutability": "view",
@@ -373,11 +434,11 @@
 			]
 		},
 		"BalanceGame.sol": {
-			"keccak256": "0x9555c77aca112946f5256ab23095750ebf819b707bc7ef469f0f4900d6bac7ee",
+			"keccak256": "0x32803e20570dda252be08097d6960b0be4693eeee7e5c9b63e481328177b2410",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://b138d13dcd7de2248ef17fb4fae317ea707744f655448620baa95725bf158b0f",
-				"dweb:/ipfs/QmWRH291vJAfJsS4GLjJSUeDVw6a4WgQmzFThVmUNjEGHM"
+				"bzz-raw://93299995da353dce8b7b31018e8ca4090b5e24330a80a86b113f0ef8475020ea",
+				"dweb:/ipfs/QmPTYd7bvA2Bb6NgXEXtiKCSo6TXsHMrv3iG9AJLus24QD"
 			]
 		}
 	},
