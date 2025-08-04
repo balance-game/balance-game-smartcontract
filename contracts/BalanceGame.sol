@@ -37,7 +37,7 @@ contract BalanceGame is Ownable(msg.sender) {
     event WhiteListUpdate(address indexed, bool status);
 
     modifier onlyWhitelist {
-        require(whiteList[msg.sender], "OnlyWhitelist");
+        require(whiteList[msg.sender], "only use Whitelist");
         _;
     }
 

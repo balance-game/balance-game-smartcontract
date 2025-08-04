@@ -434,11 +434,11 @@
 			]
 		},
 		"BalanceGame.sol": {
-			"keccak256": "0x32803e20570dda252be08097d6960b0be4693eeee7e5c9b63e481328177b2410",
+			"keccak256": "0xd2f87978f88d15630b1ae6aa32d5f7a65b66d090e965fd9c1afae21667950d92",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://93299995da353dce8b7b31018e8ca4090b5e24330a80a86b113f0ef8475020ea",
-				"dweb:/ipfs/QmPTYd7bvA2Bb6NgXEXtiKCSo6TXsHMrv3iG9AJLus24QD"
+				"bzz-raw://0b71b51d49b1ccc02ff772f7387fa170a99072fc1c1dc51360fbdf380215f273",
+				"dweb:/ipfs/QmTFrWQec8UFnrfQ7E5jpNv7yy78ofcANVozDBGaKq5fdz"
 			]
 		}
 	},
