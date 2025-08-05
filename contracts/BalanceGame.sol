@@ -3,7 +3,12 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract BalanceGame is Ownable(msg.sender) {    
+contract BalanceGame is Ownable {    
+    constructor(uint256 _cost) Ownable(msg.sender) {
+        COST = _cost;
+        whiteList[msg.sender] = true;
+    }
+
     enum VoteOpttion { A, B }
 
     struct Game {
@@ -20,11 +25,6 @@ contract BalanceGame is Ownable(msg.sender) {
 
     uint256 immutable public COST; // 게임 이용 s비용 
     uint256 public GAMEINDEX = 0; // 게임ID 카운트
-
-    constructor(uint256 _cost) {
-        COST = _cost;
-        whiteList[msg.sender] = true;
-    }
 
     mapping (uint256 => Game) public findGameById; // 게임 정보 조회
     mapping (uint256 => mapping(address => bool)) voteCheck; // 투표 유무 체크
