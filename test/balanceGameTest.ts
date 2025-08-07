@@ -15,8 +15,6 @@ describe("BalanceGame", function () {
   }
 
   describe("BalanceGameTest", function () {
-    let dqw;
-
     it(`should gameCost ${GAME_COST}`, async function () {
         const { balanceGame } = await loadFixture(balanceGameFixture);
         expect((await balanceGame.COST())).to.equal(GAME_COST);
