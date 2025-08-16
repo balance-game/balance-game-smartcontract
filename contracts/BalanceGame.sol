@@ -33,8 +33,8 @@ contract BalanceGame is Ownable {
     mapping (address => bool) public whiteList; // 화이트리스트
 
     event NewGame(uint256 indexed gameId, string questionA, string questionB, uint256 createdAt, uint256 deadline, address indexed creator);
-    event NewVote(uint256 indexed gameId, address indexed votedAddress, VoteOpttion indexed voteOpttion, uint256 votedAt);
-    event WhiteListUpdate(address indexed, bool status);
+    event NewVote(uint256 indexed gameId, address indexed votedAddress, VoteOpttion voteOpttion, uint256 votedAt);
+    event WhiteListUpdate(address indexed userAddress, bool status);
 
     modifier onlyWhitelist {
         require(whiteList[msg.sender], "only use Whitelist");

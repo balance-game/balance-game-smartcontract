@@ -28,7 +28,7 @@ describe("BalanceGame", function () {
           deadline: Math.floor(Date.now() / 1000) + 3600
         }
 
-        await balanceGame.createVote(
+        await balanceGame.createGame(
           voteInfo.questionA,
           voteInfo.questionB, 
           voteInfo.deadline,
