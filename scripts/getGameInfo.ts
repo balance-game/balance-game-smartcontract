@@ -32,7 +32,7 @@ async function main() {
     console.log("게임 생성 완료!");
 
     // 생성된 게임 정보 조회
-    const gameId = 1; // 1번 게임이라 가정
+    const gameId = 13; // 1번 게임이라 가정
     const gameInfo = await contract.findGameById(gameId);
 
     console.log(`게임 ID: ${gameInfo.id.toString()}`);
@@ -40,9 +40,19 @@ async function main() {
     console.log(`질문 B: ${gameInfo.questionB}`);
     console.log(`투표 수 A: ${gameInfo.voteCountA.toString()}`);
     console.log(`투표 수 B: ${gameInfo.voteCountB.toString()}`);
-    console.log(`마감 시간: ${new Date(gameInfo.deadline.toNumber() * 1000).toLocaleString()}`);
+    console.log(`마감 시간: ${new Date(Number(gameInfo.deadline) * 1000).toLocaleString()}`);
     console.log(`생성자 주소: ${gameInfo.creator}`);
 
+    console.log("투표 트랜잭션 전송");
+    const voteTx = await contract.vote(
+      gameId,
+      1,
+      { value: ethers.parseEther("1") }
+    );
+    const gameInfo2 = await contract.findGameById(gameId);
+    console.log(gameInfo2);
+
+    await voteTx.wait();
   } catch (error) {
     console.error("게임 생성 또는 조회 실패:", error);
   }

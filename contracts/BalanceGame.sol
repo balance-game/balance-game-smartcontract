@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -19,6 +19,7 @@ contract BalanceGame is Ownable {
         uint256 voteCountB;
         address[] votedList;
         uint256 totalETH;
+        uint256 createAt;
         uint256 deadline;
         address creator;
     }
@@ -31,9 +32,8 @@ contract BalanceGame is Ownable {
     mapping (address => bool) public isContinue; // 연속 당첨 판별
     mapping (address => bool) public whiteList; // 화이트리스트
 
-    event NewGame(uint256 indexed gameId, string questionA, string questionB, uint256 deadline, address indexed creator);
-    event GameFinished(uint256 indexed gameId);
-    event NewVote(uint256 indexed gameId, address indexed votedAddress, VoteOpttion indexed voteOpttion);
+    event NewGame(uint256 indexed gameId, string questionA, string questionB, uint256 createdAt, uint256 deadline, address indexed creator);
+    event NewVote(uint256 indexed gameId, address indexed votedAddress, VoteOpttion indexed voteOpttion, uint256 votedAt);
     event WhiteListUpdate(address indexed, bool status);
 
     modifier onlyWhitelist {
@@ -51,7 +51,8 @@ contract BalanceGame is Ownable {
         emit WhiteListUpdate(_newAddress, _status);
     }
 
-    function createVote(string memory _questionA, string memory _questionB, uint256 _deadline) public payable etherCheck onlyWhitelist returns(uint256) {
+    // 게임생성 함수
+    function createGame(string memory _questionA, string memory _questionB, uint256 _deadline) public payable etherCheck onlyWhitelist {
         require(block.timestamp < _deadline, "invalid deadline");
         GAMEINDEX++;
 
@@ -62,15 +63,15 @@ contract BalanceGame is Ownable {
         game.voteCountA = 0;
         game.voteCountB = 0;
         game.totalETH = 0;
+        game.createAt = block.timestamp;
         game.deadline = _deadline;
         game.creator = msg.sender;
 
         // 게임 추가 이벤트
-        emit NewGame(GAMEINDEX, _questionA, _questionB, _deadline, msg.sender); 
-        
-        return GAMEINDEX;
+        emit NewGame(GAMEINDEX, _questionA, _questionB, block.timestamp, _deadline, msg.sender); 
     }
 
+    // 투표 함수
     function vote(uint256 _gameId, VoteOpttion _voteOption ) public payable etherCheck onlyWhitelist {
         Game storage game = findGameById[_gameId];
         require(game.creator != address(0) , "incorrect gameId");
@@ -85,7 +86,17 @@ contract BalanceGame is Ownable {
         _voteOption == VoteOpttion.A ? game.voteCountA++ : game.voteCountB++; 
 
         // 투표 이벤트
-        emit NewVote(_gameId, msg.sender, _voteOption);
+        emit NewVote(_gameId, msg.sender, _voteOption, block.timestamp);
     }
+
+    // // 당첨자 확인 함수
+    // function checkWinner() {
+
+    // }
+
+    // // 당첨금 수령 함수
+    // function claimEther() {
+
+    // }
 } 
 
