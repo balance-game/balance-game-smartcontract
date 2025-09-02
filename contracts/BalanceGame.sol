@@ -1,15 +1,40 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.19;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "node_modules/hardhat/console.sol";
+import "node_modules/@chainlink/contracts/src/v0.8/vrf/dev/VRFConsumerBaseV2Plus.sol";
 
-contract BalanceGame is Ownable {    
-    constructor(uint256 _cost) Ownable(msg.sender) {
+contract BalanceGame is VRFConsumerBaseV2Plus {
+    uint256 immutable public COST; // 게임 이용 s비용 
+    uint256 public gameIndex = 0; // 게임ID 카운트
+
+    // VRF
+    uint256 s_subscriptionId;
+    address vrfCoordinator = 0x9DdfaCa8183c41ad55329BdeeD9F6A8d53168B1B;
+    bytes32 s_keyHash = 0x787d74caea10b2b357790d5b5247c2f63d1d91572a9846f780606e4d953677ae;
+    uint32 callbackGasLimit = 40000;
+    uint16 requestConfirmations = 3;
+    uint32 numWords =  1;
+
+    constructor(uint256 _cost, uint256 subscriptionId) VRFConsumerBaseV2Plus(vrfCoordinator) {
         COST = _cost;
         whiteList[msg.sender] = true;
+
+        s_subscriptionId = subscriptionId;
+        
     }
 
-    enum VoteOpttion { A, B }
+    enum VoteOption { A, B }
+
+    struct Winner {
+        address[3] ranks;
+        bool[3] claimed;
+    }
+
+    struct Creator {
+        address creator;
+        bool claimed;
+    }
 
     struct Game {
         uint256 id;
@@ -18,63 +43,107 @@ contract BalanceGame is Ownable {
         uint256 voteCountA;
         uint256 voteCountB;
         address[] votedList;
-        uint256 totalETH;
+        uint256 totalpool;
         uint256 createAt;
         uint256 deadline;
-        address creator;
+        Creator creator;
+        Winner winners;
     }
 
-    uint256 immutable public COST; // 게임 이용 s비용 
-    uint256 public GAMEINDEX = 0; // 게임ID 카운트
-
-    mapping (uint256 => Game) public findGameById; // 게임 정보 조회
+    mapping (uint256 => Game) private findGameById; // 게임 정보 조회
     mapping (uint256 => mapping(address => bool)) voteCheck; // 투표 유무 체크
     mapping (address => bool) public isContinue; // 연속 당첨 판별
     mapping (address => bool) public whiteList; // 화이트리스트
 
     event NewGame(uint256 indexed gameId, string questionA, string questionB, uint256 createdAt, uint256 deadline, address indexed creator);
-    event NewVote(uint256 indexed gameId, address indexed votedAddress, VoteOpttion indexed voteOpttion, uint256 votedAt);
-    event WhiteListUpdate(address indexed, bool status);
+    event NewVote(uint256 indexed gameId, address indexed votedAddress, VoteOption VoteOption, uint256 votedAt);
+    event NewWinner(uint256 indexed gameId, address rank1, address rank2, address rank3);
+    event ClaimPool(uint256 indexed gameId, address claimAddress, uint256 amount);
+    event WhiteListUpdate(address indexed userAddress, bool status);
 
     modifier onlyWhitelist {
         require(whiteList[msg.sender], "only use Whitelist");
         _;
     }
 
-    modifier etherCheck {   
-        require(msg.value >= COST, "Not Enough Ether");
+    modifier feeCheck {   
+        require(msg.value >= COST, "Not Enough fee");
         _;
     }
 
+    // 게임 이벤트 조회
+    function getGameInfo(uint256 _gameId) public view returns (
+        uint256 id,
+        string memory questionA,
+        string memory questionB,
+        uint256 voteCountA,
+        uint256 voteCountB,
+        uint256 totalpool,
+        uint256 createAt,
+        uint256 deadline,
+        address creator,
+        bool creatorClaimed
+    ) {
+        Game storage game = findGameById[_gameId];
+
+        return (
+            game.id,
+            game.questionA,
+            game.questionB,
+            game.voteCountA,
+            game.voteCountB,
+            game.totalpool,
+            game.createAt,
+            game.deadline,
+            game.creator.creator,
+            game.creator.claimed
+        );
+    }
+
+    // 당첨자 조회
+    function getGameWinner(uint256 _gameId) public view returns (
+        address[3] memory winners, 
+        bool[3] memory winnersClaimed
+    ) {
+        Game storage game = findGameById[_gameId];
+        require(game.creator.creator != address(0) , "incorrect gameId");
+        
+        return (
+            game.winners.ranks,
+            game.winners.claimed
+        );
+    }
+
+    // 화이트 리스트 업데이트
     function whitelistUpdate(address _newAddress, bool _status) public onlyOwner {
         whiteList[_newAddress] = _status;
         emit WhiteListUpdate(_newAddress, _status);
     }
 
     // 게임생성 함수
-    function createGame(string memory _questionA, string memory _questionB, uint256 _deadline) public payable etherCheck onlyWhitelist {
+    function createGame(string memory _questionA, string memory _questionB, uint256 _deadline) public payable feeCheck onlyWhitelist {
         require(block.timestamp < _deadline, "invalid deadline");
-        GAMEINDEX++;
+        gameIndex++;
 
-        Game storage game = findGameById[GAMEINDEX];
-        game.id = GAMEINDEX;
+        Game storage game = findGameById[gameIndex];
+        game.id = gameIndex;
         game.questionA = _questionA;
         game.questionB = _questionB;
         game.voteCountA = 0;
         game.voteCountB = 0;
-        game.totalETH = 0;
+        game.totalpool = 0;
         game.createAt = block.timestamp;
         game.deadline = _deadline;
-        game.creator = msg.sender;
+        game.creator.creator = msg.sender;
 
         // 게임 추가 이벤트
-        emit NewGame(GAMEINDEX, _questionA, _questionB, block.timestamp, _deadline, msg.sender); 
+        emit NewGame(gameIndex, _questionA, _questionB, block.timestamp, _deadline, msg.sender); 
     }
 
     // 투표 함수
-    function vote(uint256 _gameId, VoteOpttion _voteOption ) public payable etherCheck onlyWhitelist {
+    function vote(uint256 _gameId, VoteOption _voteOption ) public payable feeCheck onlyWhitelist {
         Game storage game = findGameById[_gameId];
-        require(game.creator != address(0) , "incorrect gameId");
+        require(game.creator.creator != address(0) , "incorrect gameId");
         require(game.deadline > block.timestamp, "This game is finished game");
         require(!voteCheck[_gameId][msg.sender], "already voted");
 
@@ -83,20 +152,108 @@ contract BalanceGame is Ownable {
         game.votedList.push(msg.sender);
 
         // 투표 처리
-        _voteOption == VoteOpttion.A ? game.voteCountA++ : game.voteCountB++; 
+        _voteOption == VoteOption.A ? game.voteCountA++ : game.voteCountB++; 
+
+        // 참가비 누적
+        game.totalpool += msg.value;
 
         // 투표 이벤트
         emit NewVote(_gameId, msg.sender, _voteOption, block.timestamp);
     }
 
-    // // 당첨자 확인 함수
-    // function checkWinner() {
+    function fulfillRandomWords(uint256 requestId, uint256[] calldata randomWords) internal override {
 
-    // }
+    }
+    
+    // 당첨자 추첨 함수
+    function checkWinner(uint256 _gameId) public onlyWhitelist onlyOwner {
+        // VRF로 구현하도록 변경해야됨
+        Game storage game = findGameById[_gameId];
+        require(game.creator.creator != address(0) , "incorrect gameId");
+        require(game.deadline < block.timestamp, "This game is not finish");
+        require(game.votedList.length >= 3, "Not enough voters");
+        require(game.winners.ranks[0] == address(0), "Already drawn.");
+        
+        address rank1 = game.votedList[0];
+        address rank2 = game.votedList[1];
+        address rank3 = game.votedList[2];
 
-    // // 당첨금 수령 함수
-    // function claimEther() {
+        game.winners.ranks[0] = rank1;
+        game.winners.ranks[1] = rank2;
+        game.winners.ranks[2] = rank3;
 
-    // }
+        emit NewWinner(_gameId, rank1, rank2, rank3);
+    }
+
+    // 당첨금 수령 함수
+    function claimPool(uint256 _gameId) public payable {
+        Game storage game = findGameById[_gameId];
+        require(game.creator.creator != address(0) , "incorrect gameId");
+        require(game.deadline < block.timestamp, "This game is not finish");
+        require(game.winners.ranks[0] != address(0), "draw not yet");
+        require(
+            game.winners.ranks[0] == msg.sender ||
+            game.winners.ranks[1] == msg.sender ||
+            game.winners.ranks[2] == msg.sender ||
+            game.creator.creator == msg.sender, "Only a winner or the game creator may call this function."
+        );
+
+        bool success;
+
+        // 게임 생성자 보상
+        // 만약 게임 생성자와 당첨자가 동일하면 중복수령 가능
+        if (game.creator.creator == msg.sender) {
+            uint256 reward = (game.totalpool * 5) / 100;
+            (success, ) = msg.sender.call{value: reward}("");
+            require(success, "claimPool fail");
+            game.creator.claimed = true;
+
+            emit ClaimPool(game.id, msg.sender, reward);
+        }
+
+        // 게임 참가자 보상
+        uint8 rank;
+        if (game.winners.ranks[0] == msg.sender) rank = 0;
+        else if (game.winners.ranks[1] == msg.sender) rank = 1;
+        else if (game.winners.ranks[2] == msg.sender) rank = 2;
+
+        // 기본 이더 지급
+        uint256 reward = 0;
+        if (rank == 0) {
+            // 1등 45%
+            reward += (game.totalpool * 45) / 100;
+        }
+        else if (rank == 1) {
+            // 2등 25%
+            reward += (game.totalpool * 25) / 100;
+        }
+        else if (rank == 2) {
+            // 3등 15%
+            reward += (game.totalpool * 20) / 100;
+        }
+
+        // 보너스 이더
+        if (isContinue[msg.sender]) {
+            reward += (game.totalpool * 5) / 100;
+        }
+
+        // 이더 전송
+        (success, ) = msg.sender.call{value: reward}("");
+        require(success, "transation fail");
+        
+        emit ClaimPool(game.id, msg.sender, reward);
+
+        // 초기화
+        if (isContinue[msg.sender]) {
+            isContinue[msg.sender] = false;
+        }
+        
+        game.winners.claimed[rank] = true;
+    }
+
+    receive() external payable { }
+    fallback() external payable {
+        revert("function not found");    
+    }
 } 
 

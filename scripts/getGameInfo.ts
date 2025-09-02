@@ -20,7 +20,7 @@ async function main() {
 
   try {
     // 게임 생성 함수 호출 (payable이니까 value 넣어야 함)
-    const tx = await contract.createVote(
+    const tx = await contract.createGame(
       voteInfo.questionA,
       voteInfo.questionB,
       voteInfo.deadline,
@@ -32,7 +32,7 @@ async function main() {
     console.log("게임 생성 완료!");
 
     // 생성된 게임 정보 조회
-    const gameId = 13; // 1번 게임이라 가정
+    const gameId = 4; // 1번 게임이라 가정
     const gameInfo = await contract.findGameById(gameId);
 
     console.log(`게임 ID: ${gameInfo.id.toString()}`);
