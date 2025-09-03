@@ -183,6 +183,7 @@ contract BalanceGame is VRFConsumerBaseV2Plus {
         requestIdToGameId[requestId] = _gameId;
     }
 
+    // VRF 빈환함수 (게임 우승자 처리)
     function fulfillRandomWords(uint256 requestId, uint256[] calldata randomWords) internal override {
         uint256 gameId = requestIdToGameId[requestId];
         require(gameId != 0, "Invalid requestId");
@@ -222,6 +223,7 @@ contract BalanceGame is VRFConsumerBaseV2Plus {
         // 게임 생성자 보상
         // 만약 게임 생성자와 당첨자가 동일하면 중복수령 가능
         if (game.creator.creator == msg.sender) {
+            require(!game.creator.claimed, "already claimed");
             reward = (game.totalpool * 5) / 100;
             (success, ) = msg.sender.call{value: reward}("");
             require(success, "claimPool fail");
@@ -232,28 +234,36 @@ contract BalanceGame is VRFConsumerBaseV2Plus {
 
         // 게임 참가자 보상
         uint8 rank;
-        if (game.winners.ranks[0] == msg.sender) rank = 0;
-        else if (game.winners.ranks[1] == msg.sender) rank = 1;
-        else if (game.winners.ranks[2] == msg.sender) rank = 2;
-        else return;
+        if (game.winners.ranks[0] == msg.sender) {
+            require(!game.winners.claimed[0], "already claimed");
+            rank = 0;
 
-        // 기본 이더 지급
-        if (rank == 0) {
             // 1등 45%
             reward += (game.totalpool * 45) / 100;
         }
-        else if (rank == 1) {
+        else if (game.winners.ranks[1] == msg.sender) {
+            require(!game.winners.claimed[1], "already claimed");
+            rank = 1;
+
             // 2등 25%
             reward += (game.totalpool * 25) / 100;
-        }
-        else if (rank == 2) {
-            // 3등 15%
+        } 
+        else if (game.winners.ranks[2] == msg.sender) {
+            require(!game.winners.claimed[2], "already claimed");
+            rank = 2;
+
+            // 3등 20%
             reward += (game.totalpool * 20) / 100;
+        } 
+        else {
+            return;
         }
 
         // 보너스 이더
         if (isContinue[msg.sender]) {
             reward += (game.totalpool * 5) / 100;
+
+            isContinue[msg.sender] = false;
         }
 
         // 이더 전송
@@ -261,12 +271,6 @@ contract BalanceGame is VRFConsumerBaseV2Plus {
         require(success, "transation fail");
         
         emit ClaimPool(game.id, msg.sender, reward);
-
-        // 초기화
-        if (isContinue[msg.sender]) {
-            isContinue[msg.sender] = false;
-        }
-        
         game.winners.claimed[rank] = true;
     }
 
