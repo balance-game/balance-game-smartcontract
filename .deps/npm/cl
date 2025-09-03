@@ -1,0 +1,8 @@
+/**
+ * Minified by jsDelivr using Terser v5.39.0.
+ * Original file: /npm/cl@0.0.1/lib/cl.js
+ *
+ * Do NOT use SRI with dynamically generated files! More information: https://www.jsdelivr.com/using-sri-with-dynamic-files
+ */
+var util=require("util");function exit(){var e=Array.prototype.slice.call(arguments,0),l=0;e.length&&("number"==typeof e[e.length-1]?(l=e[e.length-1],e.pop()):"number"==typeof e[0]&&(l=e[0],e.shift())),e.length&&(l?console.log.apply(null,e):console.error.apply(null,e)),process.exit(l)}module.exports.exit=exit;
+//# sourceMappingURL=/sm/8c8bd0e995c198e14a0f585a0318ec69f58e3fc977d6c0a227a6d8f36386757e.map

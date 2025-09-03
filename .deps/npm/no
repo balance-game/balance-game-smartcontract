@@ -1,0 +1,8 @@
+/**
+ * Minified by jsDelivr using Terser v5.39.0.
+ * Original file: /npm/no@0.0.1/index.js
+ *
+ * Do NOT use SRI with dynamically generated files! More information: https://www.jsdelivr.com/using-sri-with-dynamic-files
+ */
+require("coffee-script"),module.exports=require("./lib/main");
+//# sourceMappingURL=/sm/f58fd7827353c80aeb4f92bea9eaf13f9129fa13b6ff07aa5ffd09fccd4ea2f8.map

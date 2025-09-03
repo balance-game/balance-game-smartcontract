@@ -1,8 +1,15 @@
 import { ethers } from "hardhat";
-import { BalanceGame } from "../typechain-types";
+import { BalanceGame } from "../../typechain-types";
 import * as dotenv from "dotenv";
 
 dotenv.config({ quiet: true });
+
+
+/**
+ * 
+ * 이 파일은 로컬 VM에서만 정상적으로 작동합니다.
+ * 
+ */
 
 async function deployContract() {
   console.log('deploying BalanceGame contract')

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "node_modules/hardhat/console.sol";
-import "node_modules/@chainlink/contracts/src/v0.8/vrf/dev/VRFConsumerBaseV2Plus.sol";
+import "@chainlink/contracts/src/v0.8/vrf/dev/VRFConsumerBaseV2Plus.sol";
+import "@chainlink/contracts/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
 
 contract BalanceGame is VRFConsumerBaseV2Plus {
     uint256 immutable public COST; // 게임 이용 s비용 
@@ -12,16 +12,15 @@ contract BalanceGame is VRFConsumerBaseV2Plus {
     uint256 s_subscriptionId;
     address vrfCoordinator = 0x9DdfaCa8183c41ad55329BdeeD9F6A8d53168B1B;
     bytes32 s_keyHash = 0x787d74caea10b2b357790d5b5247c2f63d1d91572a9846f780606e4d953677ae;
-    uint32 callbackGasLimit = 40000;
+    uint32 callbackGasLimit = 250000;
     uint16 requestConfirmations = 3;
-    uint32 numWords =  1;
+    uint32 numWords = 3;
 
-    constructor(uint256 _cost, uint256 subscriptionId) VRFConsumerBaseV2Plus(vrfCoordinator) {
+    constructor(uint256 _cost, uint256 _subscriptionId) VRFConsumerBaseV2Plus(vrfCoordinator) {
         COST = _cost;
         whiteList[msg.sender] = true;
 
-        s_subscriptionId = subscriptionId;
-        
+        s_subscriptionId = _subscriptionId;
     }
 
     enum VoteOption { A, B }
@@ -54,6 +53,7 @@ contract BalanceGame is VRFConsumerBaseV2Plus {
     mapping (uint256 => mapping(address => bool)) voteCheck; // 투표 유무 체크
     mapping (address => bool) public isContinue; // 연속 당첨 판별
     mapping (address => bool) public whiteList; // 화이트리스트
+    mapping(uint256 => uint256) public requestIdToGameId;
 
     event NewGame(uint256 indexed gameId, string questionA, string questionB, uint256 createdAt, uint256 deadline, address indexed creator);
     event NewVote(uint256 indexed gameId, address indexed votedAddress, VoteOption VoteOption, uint256 votedAt);
@@ -161,28 +161,46 @@ contract BalanceGame is VRFConsumerBaseV2Plus {
         emit NewVote(_gameId, msg.sender, _voteOption, block.timestamp);
     }
 
-    function fulfillRandomWords(uint256 requestId, uint256[] calldata randomWords) internal override {
-
-    }
-    
     // 당첨자 추첨 함수
     function checkWinner(uint256 _gameId) public onlyWhitelist onlyOwner {
-        // VRF로 구현하도록 변경해야됨
         Game storage game = findGameById[_gameId];
         require(game.creator.creator != address(0) , "incorrect gameId");
         require(game.deadline < block.timestamp, "This game is not finish");
         require(game.votedList.length >= 3, "Not enough voters");
         require(game.winners.ranks[0] == address(0), "Already drawn.");
-        
-        address rank1 = game.votedList[0];
-        address rank2 = game.votedList[1];
-        address rank3 = game.votedList[2];
 
-        game.winners.ranks[0] = rank1;
-        game.winners.ranks[1] = rank2;
-        game.winners.ranks[2] = rank3;
+        uint256 requestId = s_vrfCoordinator.requestRandomWords(
+            VRFV2PlusClient.RandomWordsRequest({
+                keyHash: s_keyHash,
+                subId: s_subscriptionId,
+                requestConfirmations: requestConfirmations,
+                callbackGasLimit: callbackGasLimit,
+                numWords: numWords,
+                extraArgs: VRFV2PlusClient._argsToBytes(VRFV2PlusClient.ExtraArgsV1({nativePayment: false}))
+            })
+        );
 
-        emit NewWinner(_gameId, rank1, rank2, rank3);
+        requestIdToGameId[requestId] = _gameId;
+    }
+
+    function fulfillRandomWords(uint256 requestId, uint256[] calldata randomWords) internal override {
+        uint256 gameId = requestIdToGameId[requestId];
+        require(gameId != 0, "Invalid requestId");
+
+        Game storage game = findGameById[gameId];
+
+        for (uint8 i; i < 3; i++) {
+            uint256 winnerIndex = randomWords[i] % game.votedList.length;
+            address winner = game.votedList[winnerIndex];
+            game.winners.ranks[i] = winner; 
+        }
+
+        emit NewWinner(
+            gameId,
+            game.winners.ranks[0],
+            game.winners.ranks[1],
+            game.winners.ranks[2]
+        );
     }
 
     // 당첨금 수령 함수
@@ -199,11 +217,12 @@ contract BalanceGame is VRFConsumerBaseV2Plus {
         );
 
         bool success;
+        uint256 reward = 0;
 
         // 게임 생성자 보상
         // 만약 게임 생성자와 당첨자가 동일하면 중복수령 가능
         if (game.creator.creator == msg.sender) {
-            uint256 reward = (game.totalpool * 5) / 100;
+            reward = (game.totalpool * 5) / 100;
             (success, ) = msg.sender.call{value: reward}("");
             require(success, "claimPool fail");
             game.creator.claimed = true;
@@ -216,9 +235,9 @@ contract BalanceGame is VRFConsumerBaseV2Plus {
         if (game.winners.ranks[0] == msg.sender) rank = 0;
         else if (game.winners.ranks[1] == msg.sender) rank = 1;
         else if (game.winners.ranks[2] == msg.sender) rank = 2;
+        else return;
 
         // 기본 이더 지급
-        uint256 reward = 0;
         if (rank == 0) {
             // 1등 45%
             reward += (game.totalpool * 45) / 100;
@@ -255,5 +274,4 @@ contract BalanceGame is VRFConsumerBaseV2Plus {
     fallback() external payable {
         revert("function not found");    
     }
-} 
-
+}
