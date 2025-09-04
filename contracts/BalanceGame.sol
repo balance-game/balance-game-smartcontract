@@ -57,7 +57,7 @@ contract BalanceGame is VRFConsumerBaseV2Plus {
 
     event NewGame(uint256 indexed gameId, string questionA, string questionB, uint256 createdAt, uint256 deadline, address indexed creator);
     event NewVote(uint256 indexed gameId, address indexed votedAddress, VoteOption VoteOption, uint256 votedAt);
-    event NewWinner(uint256 indexed gameId, address rank1, address rank2, address rank3);
+    event NewWinner(uint256 indexed gameId, address[3]);
     event ClaimPool(uint256 indexed gameId, address claimAddress, uint256 amount);
     event WhiteListUpdate(address indexed userAddress, bool status);
 
@@ -198,9 +198,7 @@ contract BalanceGame is VRFConsumerBaseV2Plus {
 
         emit NewWinner(
             gameId,
-            game.winners.ranks[0],
-            game.winners.ranks[1],
-            game.winners.ranks[2]
+            game.winners.ranks
         );
     }
 
