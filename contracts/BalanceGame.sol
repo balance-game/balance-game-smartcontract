@@ -3,8 +3,9 @@ pragma solidity ^0.8.19;
 
 import "@chainlink/contracts/src/v0.8/vrf/dev/VRFConsumerBaseV2Plus.sol";
 import "@chainlink/contracts/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-contract BalanceGame is VRFConsumerBaseV2Plus {
+contract BalanceGame is VRFConsumerBaseV2Plus, ReentrancyGuard {
     uint256 immutable public COST; // 게임 이용 s비용 
     uint256 public gameIndex = 0; // 게임ID 카운트
 
@@ -24,6 +25,7 @@ contract BalanceGame is VRFConsumerBaseV2Plus {
     }
 
     enum VoteOption { A, B }
+    enum WinnerRank { Creator, Rank1, Rank2, Rank3 }
 
     struct Winner {
         address[3] ranks;
@@ -55,10 +57,13 @@ contract BalanceGame is VRFConsumerBaseV2Plus {
     mapping (address => bool) public whiteList; // 화이트리스트
     mapping(uint256 => uint256) public requestIdToGameId;
 
+    // VRF (gameId => bool)
+    mapping (uint256=> bool) private vrfRequested;
+
     event NewGame(uint256 indexed gameId, string questionA, string questionB, uint256 createdAt, uint256 deadline, address indexed creator);
     event NewVote(uint256 indexed gameId, address indexed votedAddress, VoteOption VoteOption, uint256 votedAt);
     event NewWinner(uint256 indexed gameId, address[3]);
-    event ClaimPool(uint256 indexed gameId, address claimAddress, uint256 amount);
+    event ClaimPool(uint256 indexed gameId, address claimAddress, uint256 amount, WinnerRank winnerRank);
     event WhiteListUpdate(address indexed userAddress, bool status);
 
     modifier onlyWhitelist {
@@ -168,6 +173,9 @@ contract BalanceGame is VRFConsumerBaseV2Plus {
         require(game.deadline < block.timestamp, "This game is not finish");
         require(game.votedList.length >= 3, "Not enough voters");
         require(game.winners.ranks[0] == address(0), "Already drawn.");
+        require(!vrfRequested[_gameId], "Already requested");
+
+        vrfRequested[_gameId] = true;
 
         uint256 requestId = s_vrfCoordinator.requestRandomWords(
             VRFV2PlusClient.RandomWordsRequest({
@@ -203,7 +211,7 @@ contract BalanceGame is VRFConsumerBaseV2Plus {
     }
 
     // 당첨금 수령 함수
-    function claimPool(uint256 _gameId) public payable {
+    function claimPool(uint256 _gameId) public payable nonReentrant {
         Game storage game = findGameById[_gameId];
         require(game.creator.creator != address(0) , "incorrect gameId");
         require(game.deadline < block.timestamp, "This game is not finish");
@@ -222,19 +230,19 @@ contract BalanceGame is VRFConsumerBaseV2Plus {
         // 만약 게임 생성자와 당첨자가 동일하면 중복수령 가능
         if (game.creator.creator == msg.sender) {
             require(!game.creator.claimed, "already claimed");
-            reward = (game.totalpool * 5) / 100;
-            (success, ) = msg.sender.call{value: reward}("");
-            require(success, "claimPool fail");
-            game.creator.claimed = true;
+            reward += (game.totalpool * 5) / 100;
 
-            emit ClaimPool(game.id, msg.sender, reward);
+            game.creator.claimed = true;
+            emit ClaimPool(game.id, msg.sender, reward, WinnerRank.Creator);
         }
 
         // 게임 참가자 보상
         uint8 rank;
+        WinnerRank winnerRank;
         if (game.winners.ranks[0] == msg.sender) {
             require(!game.winners.claimed[0], "already claimed");
             rank = 0;
+            winnerRank = WinnerRank.Rank1;
 
             // 1등 45%
             reward += (game.totalpool * 45) / 100;
@@ -242,6 +250,7 @@ contract BalanceGame is VRFConsumerBaseV2Plus {
         else if (game.winners.ranks[1] == msg.sender) {
             require(!game.winners.claimed[1], "already claimed");
             rank = 1;
+            winnerRank = WinnerRank.Rank2;
 
             // 2등 25%
             reward += (game.totalpool * 25) / 100;
@@ -249,6 +258,7 @@ contract BalanceGame is VRFConsumerBaseV2Plus {
         else if (game.winners.ranks[2] == msg.sender) {
             require(!game.winners.claimed[2], "already claimed");
             rank = 2;
+            winnerRank = WinnerRank.Rank3;
 
             // 3등 20%
             reward += (game.totalpool * 20) / 100;
@@ -264,12 +274,12 @@ contract BalanceGame is VRFConsumerBaseV2Plus {
             isContinue[msg.sender] = false;
         }
 
+        game.winners.claimed[rank] = true;
+        emit ClaimPool(game.id, msg.sender, reward, winnerRank);
+
         // 이더 전송
         (success, ) = msg.sender.call{value: reward}("");
         require(success, "transation fail");
-        
-        emit ClaimPool(game.id, msg.sender, reward);
-        game.winners.claimed[rank] = true;
     }
 
     receive() external payable { }

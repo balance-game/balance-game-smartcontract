@@ -7,7 +7,9 @@ dotenv.config({ quiet: true });
 
 /**
  * 
- * 이 파일은 로컬 VM에서만 정상적으로 작동합니다.
+ * TEMP FILE
+ * Not Working
+ * VRF ISSUE
  * 
  */
 
@@ -46,7 +48,7 @@ async function main() {
         gameInfo.questionA,
         gameInfo.questionB,
         gameInfo.deadline,
-        { value: 1 }
+        { value: ethers.parseEther('1') }
     );
 
     const gameId = await contract.gameIndex();
@@ -69,7 +71,7 @@ async function main() {
     }
 
     // 추첨 및 수령
-    await contract.checkWinner(1);
+    await contract.connect(signers[0]).checkWinner(1);
     for (let i = 0; i < 3; i++) {
         await contract.connect(signers[i]).claimPool(gameId);
     }
