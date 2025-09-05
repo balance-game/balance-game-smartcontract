@@ -61,9 +61,9 @@ contract BalanceGame is VRFConsumerBaseV2Plus, ReentrancyGuard {
     mapping (uint256=> bool) private vrfRequested;
 
     event NewGame(uint256 indexed gameId, string questionA, string questionB, uint256 createdAt, uint256 deadline, address indexed creator);
-    event NewVote(uint256 indexed gameId, address indexed votedAddress, VoteOption VoteOption, uint256 votedAt);
-    event NewWinner(uint256 indexed gameId, address[3]);
-    event ClaimPool(uint256 indexed gameId, address claimAddress, uint256 amount, WinnerRank winnerRank);
+    event NewVote(uint256 indexed gameId, address indexed votedAddress, VoteOption voteOption, uint256 votedAt);
+    event NewWinner(uint256 indexed gameId, address[3] winners);
+    event ClaimPool(uint256 indexed gameId, address indexed claimAddress, uint256 amount, WinnerRank indexed winnerRank);
     event WhiteListUpdate(address indexed userAddress, bool status);
 
     modifier onlyWhitelist {
