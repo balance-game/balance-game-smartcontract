@@ -11,7 +11,8 @@ contract BalanceGame is VRFConsumerBaseV2Plus, ReentrancyGuard {
 
     // VRF
     uint256 s_subscriptionId;
-    address vrfCoordinator = 0x9DdfaCa8183c41ad55329BdeeD9F6A8d53168B1B;
+    // address vrfCoordinator = 0x9DdfaCa8183c41ad55329BdeeD9F6A8d53168B1B;
+    address vrfCoordinator = 0x5FbDB2315678afecb367f032d93F642f64180aa3;
     bytes32 s_keyHash = 0x787d74caea10b2b357790d5b5247c2f63d1d91572a9846f780606e4d953677ae;
     uint32 callbackGasLimit = 250000;
     uint16 requestConfirmations = 3;
@@ -65,6 +66,7 @@ contract BalanceGame is VRFConsumerBaseV2Plus, ReentrancyGuard {
     event NewWinner(uint256 indexed gameId, address[3] winners);
     event ClaimPool(uint256 indexed gameId, address indexed claimAddress, uint256 amount, WinnerRank indexed winnerRank);
     event WhiteListUpdate(address indexed userAddress, bool status);
+    event RandomnessRequested(uint256 requestId, uint256 gameId);
 
     modifier onlyWhitelist {
         require(whiteList[msg.sender], "only use Whitelist");
@@ -167,7 +169,7 @@ contract BalanceGame is VRFConsumerBaseV2Plus, ReentrancyGuard {
     }
 
     // 당첨자 추첨 함수
-    function checkWinner(uint256 _gameId) public onlyWhitelist onlyOwner {
+    function checkWinner(uint256 _gameId) public onlyWhitelist {
         Game storage game = findGameById[_gameId];
         require(game.creator.creator != address(0) , "incorrect gameId");
         require(game.deadline < block.timestamp, "This game is not finish");
@@ -189,9 +191,10 @@ contract BalanceGame is VRFConsumerBaseV2Plus, ReentrancyGuard {
         );
 
         requestIdToGameId[requestId] = _gameId;
+        emit RandomnessRequested(requestId, _gameId);
     }
 
-    // VRF 빈환함수 (게임 우승자 처리)
+    // VRF 반환함수 (게임 우승자 처리)
     function fulfillRandomWords(uint256 requestId, uint256[] calldata randomWords) internal override {
         uint256 gameId = requestIdToGameId[requestId];
         require(gameId != 0, "Invalid requestId");
@@ -203,6 +206,11 @@ contract BalanceGame is VRFConsumerBaseV2Plus, ReentrancyGuard {
             address winner = game.votedList[winnerIndex];
             game.winners.ranks[i] = winner; 
         }
+
+        /**
+         * TODO:
+         * 게임 생성자일 경우에는 자동 이더 송금 처리
+         */
 
         emit NewWinner(
             gameId,
