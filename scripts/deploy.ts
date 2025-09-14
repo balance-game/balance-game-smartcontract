@@ -1,9 +1,11 @@
 import { ethers } from "hardhat";
 
-async function main(cost: number, subscriptionId: number): Promise<string> {
+async function main(): Promise<string> {
+  const subscriptionId = "";
+
   console.log('deploying BalanceGame contract')
   const BalanceGame = await ethers.getContractFactory("BalanceGame");
-  const balanceGame = await BalanceGame.deploy(cost, subscriptionId);
+  const balanceGame = await BalanceGame.deploy(1, subscriptionId);
 
   console.log(`vendingMachine contract is deployed to ${balanceGame.target}`);
 
@@ -11,3 +13,7 @@ async function main(cost: number, subscriptionId: number): Promise<string> {
 }
 
 export default main;
+
+main().catch((err) => {
+  console.error(err);
+});

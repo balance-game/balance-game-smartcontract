@@ -138,7 +138,7 @@ contract BalanceGame is VRFConsumerBaseV2Plus, ReentrancyGuard {
         game.questionB = _questionB;
         game.voteCountA = 0;
         game.voteCountB = 0;
-        game.totalpool = 0;
+        game.totalpool = msg.value;
         game.createAt = block.timestamp;
         game.deadline = _deadline;
         game.creator.creator = msg.sender;

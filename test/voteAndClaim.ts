@@ -118,6 +118,19 @@ describe("BalanceGameTest", async () => {
   });
 
   it("claimPool", async () => {
+    // 생성자
+    const tx = await balanceGame.connect(owner).claimPool(1);
+    const c_receipt = await tx.wait();
+    const c_eventTopic = balanceGame.interface.getEvent("ClaimPool").topicHash;
+
+    expect(c_eventTopic).to.exist;
+    const c_foundLog = c_receipt?.logs.find((log) => log.topics[0] === c_eventTopic);
+    const parseLog = balanceGame.interface.parseLog(c_foundLog!);
+
+    expect(parseLog?.args.amount).to.equal(150000000000000000n);
+    expect(parseLog?.args.winnerRank).to.equal(0);
+
+    // 투표참여자
     for(let i = 0; i < 3; i++) {
       const tx = await balanceGame.connect(otherAccount[i]).claimPool(1);
       const receipt = await tx.wait();
