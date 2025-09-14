@@ -17,7 +17,9 @@ const config: HardhatUserConfig = {
     },
     amoy: {
       url: process.env.AMOY_URL,
-      accounts: [process.env.PRIVATE_KEY!]
+      accounts: [process.env.PRIVATE_KEY!],
+      gasPrice: 35e9,
+      gas: 25e6,
     }
   }
 };
