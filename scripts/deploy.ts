@@ -1,7 +1,7 @@
 import { ethers } from "hardhat";
 
 async function main(): Promise<string> {
-  const subscriptionId = "";
+  const subscriptionId = "1234";
 
   console.log('deploying BalanceGame contract')
   const BalanceGame = await ethers.getContractFactory("BalanceGame");

@@ -11,7 +11,10 @@ async function main() {
     const contract = balanceGame.attach(CONTRACT_ADDRESS) as BalanceGame;
     const signers = await ethers.getSigners();
 
-    const tx = contract.claimPool(1);
+    const tx = await contract.claimPool(16);
+
+    const receipt = await tx.wait();
+    console.log(receipt?.logs);
 
     console.log("Transaction Success");
 }

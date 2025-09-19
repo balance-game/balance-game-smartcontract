@@ -11,13 +11,8 @@ async function main() {
     const contract = balanceGame.attach(CONTRACT_ADDRESS) as BalanceGame;
     const signers = await ethers.getSigners();
 
-    const tx = await contract.connect(signers[0]).createGame(
-        "40% 확률로 실패 100억",
-        "그냥 1억",
-        Math.floor(Date.now() / 1000) + 360,
-        { value: 1 }
-    );
-    const eventTopic = balanceGame.interface.getEvent("CreateGame")?.topicHash;
+    const tx = await contract.connect(signers[0]).vote(16, 1, { value: 1 });
+    const eventTopic = balanceGame.interface.getEvent("NewVote")?.topicHash;
 
     const receipt = await tx.wait();
     console.log(receipt?.logs);
