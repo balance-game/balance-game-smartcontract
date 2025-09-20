@@ -1,6 +1,8 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import * as dotenv from "dotenv";
+import "hardhat-gas-reporter"
+import "solidity-coverage"
 
 dotenv.config({ quiet: true });
 
@@ -21,6 +23,10 @@ const config: HardhatUserConfig = {
       gasPrice: 35e9,
       gas: 25e6,
     }
+  },
+  gasReporter: {
+    enabled: true,
+    currency: "KRW"
   }
 };
 

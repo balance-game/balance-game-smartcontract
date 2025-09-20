@@ -12,6 +12,8 @@ contract BalanceGame is VRFConsumerBaseV2Plus, ReentrancyGuard {
     // VRF
     uint256 s_subscriptionId;
     address vrfCoordinator = 0x343300b5d84D444B2ADc9116FEF1bED02BE49Cf2;
+    // address vrfCoordinator = 0x5FbDB2315678afecb367f032d93F642f64180aa3;
+
     bytes32 s_keyHash = 0x816bedba8a50b294e5cbd47842baf240c2385f2eaf719edbd4f250a137a8c899;
     uint32 callbackGasLimit = 250000;
     uint16 requestConfirmations = 3;

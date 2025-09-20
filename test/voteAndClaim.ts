@@ -127,7 +127,7 @@ describe("BalanceGameTest", async () => {
     const c_foundLog = c_receipt?.logs.find((log) => log.topics[0] === c_eventTopic);
     const parseLog = balanceGame.interface.parseLog(c_foundLog!);
 
-    expect(parseLog?.args.amount).to.equal(150000000000000000n);
+    expect(parseLog?.args.amount).to.equal(200000000000000000n);
     expect(parseLog?.args.winnerRank).to.equal(0);
 
     // 투표참여자
@@ -144,19 +144,19 @@ describe("BalanceGameTest", async () => {
       switch(iBigInt) {
         case 0n: {
           expect(parseLog?.args.winnerRank).to.equal(2n);
-          expect(parseLog?.args.amount).to.equal(750000000000000000n);
+          expect(parseLog?.args.amount).to.equal(1000000000000000000n);
 
           break;
         }
         case 1n: {
           expect(parseLog?.args.winnerRank).to.equal(3n);
-          expect(parseLog?.args.amount).to.equal(600000000000000000n);
+          expect(parseLog?.args.amount).to.equal(800000000000000000n);
 
           break;
         }
         case 2n: {
           expect(parseLog?.args.winnerRank).to.equal(1n);
-          expect(parseLog?.args.amount).to.equal(1350000000000000000n);
+          expect(parseLog?.args.amount).to.equal(1800000000000000000n);
 
           break;
         }
