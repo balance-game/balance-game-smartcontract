@@ -7,7 +7,7 @@ import { BalanceGame, VRFCoordinatorV2_5Mock } from "../typechain-types";
 dotenv.config({ quiet: true });
 
 /**
- * TODO:
+ * @TODO
  * 이벤트 부분 Topic으로 조회하는 방식으로 수정해야됨
  */
 
@@ -29,13 +29,13 @@ async function balanceGameFixture() {
   const receipt = await tx.wait();
   const log = vrf.interface.parseLog(receipt!.logs[0]);
   SUBSCRIPTION_Id = BigInt(log!.args.subId);
-
+  
   // fund
   await vrf.fundSubscription(SUBSCRIPTION_Id, ethers.parseEther('1000'));
   
   // balanceGame
   const BalanceGame = await ethers.getContractFactory("BalanceGame");
-  const balanceGame = await BalanceGame.deploy(GAME_COST, SUBSCRIPTION_Id);
+  const balanceGame = await BalanceGame.deploy(GAME_COST, SUBSCRIPTION_Id, vrf.target);
   
   await vrf.addConsumer(SUBSCRIPTION_Id, balanceGame.target);
   
@@ -65,10 +65,11 @@ describe("BalanceGameTest", async () => {
   });
 
   it("createGame", async () => {
+    const topic = "중국집가면"
     const questionA = "짜장면";
     const questionB = "짬뽕";
     const deadline = Math.floor(Date.now() / 1000) + 3600;
-    const tx = await balanceGame.createGame(questionA, questionB, deadline, { value: ethers.parseEther("1") });
+    const tx = await balanceGame.createGame(topic, questionA, questionB, deadline, { value: ethers.parseEther("1") });
     const receipt = await tx.wait();
 
     expect(receipt).to.exist;
@@ -130,6 +131,10 @@ describe("BalanceGameTest", async () => {
     expect(parseLog?.args.amount).to.equal(200000000000000000n);
     expect(parseLog?.args.winnerRank).to.equal(0);
 
+    /**
+     * @TODO
+     * 투표 만든 사람이 수령하는것도 테스트해야함
+     */
     // 투표참여자
     for(let i = 0; i < 3; i++) {
       const tx = await balanceGame.connect(otherAccount[i]).claimPool(1);
@@ -144,7 +149,7 @@ describe("BalanceGameTest", async () => {
       switch(iBigInt) {
         case 0n: {
           expect(parseLog?.args.winnerRank).to.equal(2n);
-          expect(parseLog?.args.amount).to.equal(1000000000000000000n);
+          expect(parseLog?.args.amount).to.equal(1200000000000000000n);
 
           break;
         }
@@ -157,7 +162,6 @@ describe("BalanceGameTest", async () => {
         case 2n: {
           expect(parseLog?.args.winnerRank).to.equal(1n);
           expect(parseLog?.args.amount).to.equal(1800000000000000000n);
-
           break;
         }
         default: {

@@ -7,23 +7,22 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 contract BalanceGame is VRFConsumerBaseV2Plus, ReentrancyGuard {
     uint256 immutable public COST; // 게임 이용 s비용 
+    address immutable vrfCoordinator;
     uint256 public gameIndex = 0; // 게임ID 카운트
 
     // VRF
     uint256 s_subscriptionId;
-    address vrfCoordinator = 0x343300b5d84D444B2ADc9116FEF1bED02BE49Cf2;
-    // address vrfCoordinator = 0x5FbDB2315678afecb367f032d93F642f64180aa3;
-
     bytes32 s_keyHash = 0x816bedba8a50b294e5cbd47842baf240c2385f2eaf719edbd4f250a137a8c899;
     uint32 callbackGasLimit = 250000;
     uint16 requestConfirmations = 3;
     uint32 numWords = 3;
 
-    constructor(uint256 _cost, uint256 _subscriptionId) VRFConsumerBaseV2Plus(vrfCoordinator) {
+    constructor(uint256 _cost, uint256 _subscriptionId, address _vrfCoordinator) VRFConsumerBaseV2Plus(_vrfCoordinator) {
         COST = _cost;
         whiteList[msg.sender] = true;
 
         s_subscriptionId = _subscriptionId;
+        vrfCoordinator = _vrfCoordinator;
     }
 
     enum VoteOption { A, B }
@@ -41,6 +40,7 @@ contract BalanceGame is VRFConsumerBaseV2Plus, ReentrancyGuard {
 
     struct Game {
         uint256 id;
+        string topic;
         string questionA;
         string questionB;
         uint256 voteCountA;
@@ -55,14 +55,13 @@ contract BalanceGame is VRFConsumerBaseV2Plus, ReentrancyGuard {
 
     mapping (uint256 => Game) private findGameById; // 게임 정보 조회
     mapping (uint256 => mapping(address => bool)) voteCheck; // 투표 유무 체크
-    mapping (address => bool) public isContinue; // 연속 당첨 판별
     mapping (address => bool) public whiteList; // 화이트리스트
     mapping(uint256 => uint256) public requestIdToGameId;
 
     // VRF (gameId => bool)
     mapping (uint256=> bool) private vrfRequested;
 
-    event NewGame(uint256 indexed gameId, string questionA, string questionB, uint256 createdAt, uint256 deadline, address indexed creator);
+    event NewGame(uint256 indexed gameId, string topic, string questionA, string questionB, uint256 createdAt, uint256 deadline, address indexed creator);
     event NewVote(uint256 indexed gameId, address indexed votedAddress, VoteOption voteOption, uint256 votedAt);
     event NewWinner(uint256 indexed gameId, address[3] winners);
     event ClaimPool(uint256 indexed gameId, address indexed claimAddress, uint256 amount, WinnerRank indexed winnerRank);
@@ -82,6 +81,7 @@ contract BalanceGame is VRFConsumerBaseV2Plus, ReentrancyGuard {
     // 게임 이벤트 조회
     function getGameInfo(uint256 _gameId) public view returns (
         uint256 id,
+        string memory topic,
         string memory questionA,
         string memory questionB,
         uint256 voteCountA,
@@ -96,6 +96,7 @@ contract BalanceGame is VRFConsumerBaseV2Plus, ReentrancyGuard {
 
         return (
             game.id,
+            game.topic,
             game.questionA,
             game.questionB,
             game.voteCountA,
@@ -129,12 +130,13 @@ contract BalanceGame is VRFConsumerBaseV2Plus, ReentrancyGuard {
     }
 
     // 게임생성 함수
-    function createGame(string memory _questionA, string memory _questionB, uint256 _deadline) public payable feeCheck onlyWhitelist {
+    function createGame(string memory topic, string memory _questionA, string memory _questionB, uint256 _deadline) public payable feeCheck onlyWhitelist {
         require(block.timestamp < _deadline, "invalid deadline");
         gameIndex++;
 
         Game storage game = findGameById[gameIndex];
         game.id = gameIndex;
+        game.topic = topic;
         game.questionA = _questionA;
         game.questionB = _questionB;
         game.voteCountA = 0;
@@ -145,7 +147,7 @@ contract BalanceGame is VRFConsumerBaseV2Plus, ReentrancyGuard {
         game.creator.creator = msg.sender;
 
         // 게임 추가 이벤트
-        emit NewGame(gameIndex, _questionA, _questionB, block.timestamp, _deadline, msg.sender); 
+        emit NewGame(gameIndex, topic, _questionA, _questionB, block.timestamp, _deadline, msg.sender); 
     }
 
     // 투표 함수
@@ -209,8 +211,9 @@ contract BalanceGame is VRFConsumerBaseV2Plus, ReentrancyGuard {
         }
 
         /**
-         * TODO:
+         * @TODO:
          * 게임 생성자일 경우에는 자동 이더 송금 처리
+         * 중복 추첨 해결하야됨
          */
 
         emit NewWinner(
@@ -262,7 +265,7 @@ contract BalanceGame is VRFConsumerBaseV2Plus, ReentrancyGuard {
             winnerRank = WinnerRank.Rank2;
 
             // 2등 25%
-            reward += (game.totalpool * 25) / 100;
+            reward += (game.totalpool * 30) / 100;
         } 
         else if (game.winners.ranks[2] == msg.sender) {
             require(!game.winners.claimed[2], "already claimed");
@@ -274,13 +277,6 @@ contract BalanceGame is VRFConsumerBaseV2Plus, ReentrancyGuard {
         } 
         else {
             return;
-        }
-
-        // 보너스 이더
-        if (isContinue[msg.sender]) {
-            reward += (game.totalpool * 5) / 100;
-
-            isContinue[msg.sender] = false;
         }
 
         game.winners.claimed[rank] = true;

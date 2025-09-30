@@ -12,9 +12,10 @@ async function main() {
     const signers = await ethers.getSigners();
 
     const tx = await contract.connect(signers[0]).createGame(
-        "40% 확률로 실패 100억",
-        "그냥 1억",
-        Math.floor(Date.now() / 1000) + 360,
+        "물복 vs 딱복",
+        "물복",
+        "딱복",
+        Math.floor(Date.now() / 1000) + 36000000,
         { value: 1 }
     );
     const eventTopic = balanceGame.interface.getEvent("CreateGame")?.topicHash;
