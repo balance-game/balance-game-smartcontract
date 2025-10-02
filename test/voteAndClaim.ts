@@ -110,11 +110,12 @@ describe("BalanceGameTest", async () => {
     const vrfTx = await vrf.fulfillRandomWords(requestId, balanceGame.target);
     const vrfReceipt = await vrfTx.wait();
     const eventTopic = balanceGame.interface.getEvent("NewWinner").topicHash;
-    
+
     // VRF log
     expect(vrfReceipt).to.exist;
     const foundLog = vrfReceipt?.logs.find((log) => log.topics[0] === eventTopic);
     const parseLog = balanceGame.interface.parseLog(foundLog!);
+    console.log(parseLog?.args);
     expect(parseLog?.args.gameId).to.equal(1);
   });
 

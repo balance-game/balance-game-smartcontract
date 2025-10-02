@@ -198,23 +198,36 @@ contract BalanceGame is VRFConsumerBaseV2Plus, ReentrancyGuard {
     }
 
     // VRF 반환함수 (게임 우승자 처리)
-    function fulfillRandomWords(uint256 requestId, uint256[] calldata randomWords) internal override {
+    // 중복 추첨 해결해야됨
+    function fulfillRandomWords(uint256 requestId, uint256[] calldata _randomWords) internal override {
         uint256 gameId = requestIdToGameId[requestId];
         require(gameId != 0, "Invalid requestId");
 
         Game storage game = findGameById[gameId];
+        int256[3] memory indexs; 
 
-        for (uint8 i; i < 3; i++) {
-            uint256 winnerIndex = randomWords[i] % game.votedList.length;
-            address winner = game.votedList[winnerIndex];
-            game.winners.ranks[i] = winner; 
+        for(uint8 i = 0; i < 3; i++) {
+            indexs[i] = -1;
         }
 
-        /**
-         * @TODO:
-         * 게임 생성자일 경우에는 자동 이더 송금 처리
-         * 중복 추첨 해결하야됨
-         */
+        uint256[] memory randomWords = _randomWords;
+
+        for (uint8 i = 0; i < 3; i++) {
+            uint256 winnerIndex;
+            bool unique = false;
+            while (!unique) {
+                winnerIndex = randomWords[i] % game.votedList.length;
+                unique = true;
+                for (uint8 j = 0; j < i; j++) {
+                    if (game.winners.ranks[j] == game.votedList[winnerIndex]) {
+                        unique = false;
+                        randomWords[i] = uint256(keccak256(abi.encode(randomWords[i], i)));
+                        break;
+                    }
+                }
+            }
+            game.winners.ranks[i] = game.votedList[winnerIndex];
+        }
 
         emit NewWinner(
             gameId,
